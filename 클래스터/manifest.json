@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "zftx",
+  "version": "1.5",
+  "description": "클래스팅 자동 매크로",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.classting.com/*",
+    "https://clapi.classting.com/*",
+    "https://ai.classting.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ai.classting.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
