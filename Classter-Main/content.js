@@ -381,6 +381,21 @@ function handleResultPage() {
   });
 }
 
+function checkAndHandleUrl() {
+  const currentUrl = window.location.href;
+  console.log(`현재 URL 체크: ${currentUrl}`);
+  if (currentUrl.endsWith('/result')) {
+    console.log("'/result' 페이지 감지됨");
+    handleResultPage().then(() => {
+      console.log("handleResultPage 완료, fetchDataAndSelectAnswer 호출");
+      fetchDataAndSelectAnswer();
+    });
+  } else {
+    console.log("일반 페이지, fetchDataAndSelectAnswer 호출");
+    fetchDataAndSelectAnswer();
+  }
+}
+
 let lastUrl = location.href;
 new MutationObserver(() => {
   const url = location.href;
@@ -391,7 +406,7 @@ new MutationObserver(() => {
   }
 }).observe(document, { subtree: true, childList: true });
 
-console.log("클래스터가 실행중입니다.");
+console.log("클래스터가 정상적으로 실행중입니다.");
 setTimeout(() => {
   checkAndHandleUrl();
 }, 2000);
