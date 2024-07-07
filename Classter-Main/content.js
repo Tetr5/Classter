@@ -141,17 +141,37 @@ function clickNextButton(element, attempts = 0) {
     clickElement(element)
       .then(() => {
         console.log("다음 문제 버튼 클릭 성공");
+        return waitForPageChange();
+      })
+      .then(() => {
         resolve();
       })
       .catch(error => {
-        console.error('다음 문제 버튼 클릭 실패:', error);
+        console.error('다음 문제 버튼 클릭 또는 페이지 변경 실패:', error);
         if (attempts < 3) {
           console.log(`재시도 중... (${attempts + 1}/3)`);
-          setTimeout(() => clickNextButton(element, attempts + 1).then(resolve).catch(reject), 1000);
+          setTimeout(() => clickNextButton(element, attempts + 1).then(resolve).catch(reject), 2000);
         } else {
           reject(new Error('다음 문제 버튼 클릭 최대 시도 횟수 초과'));
         }
       });
+  });
+}
+
+function waitForPageChange(timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const oldUrl = window.location.href;
+    const startTime = Date.now();
+    const checkUrlChange = setInterval(() => {
+      if (window.location.href !== oldUrl) {
+        clearInterval(checkUrlChange);
+        console.log("페이지 변경 감지됨");
+        setTimeout(resolve, 2000); // 페이지 로드를 위해 2초 대기
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(checkUrlChange);
+        reject(new Error("페이지 변경 타임아웃"));
+      }
+    }, 500);
   });
 }
 
@@ -386,7 +406,7 @@ new MutationObserver(() => {
   }
 }).observe(document, { subtree: true, childList: true });
 
-console.log("초기 실행 시작 (version: 5)");
+console.log("클래스터가 실행중입니다.");
 setTimeout(() => {
   checkAndHandleUrl();
 }, 2000);
