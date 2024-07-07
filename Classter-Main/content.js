@@ -381,21 +381,6 @@ function handleResultPage() {
   });
 }
 
-function checkAndHandleUrl() {
-  const currentUrl = window.location.href;
-  console.log(`현재 URL 체크: ${currentUrl}`);
-  if (currentUrl.endsWith('/result')) {
-    console.log("'/result' 페이지 감지됨");
-    handleResultPage().then(() => {
-      console.log("handleResultPage 완료, fetchDataAndSelectAnswer 호출");
-      fetchDataAndSelectAnswer();
-    });
-  } else {
-    console.log("일반 페이지, fetchDataAndSelectAnswer 호출");
-    fetchDataAndSelectAnswer();
-  }
-}
-
 let lastUrl = location.href;
 new MutationObserver(() => {
   const url = location.href;
