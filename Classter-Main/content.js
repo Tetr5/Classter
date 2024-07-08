@@ -88,51 +88,73 @@ function selectAnswer(data) {
             }
           }).catch(error => console.error(error));
         }
+        setTimeout(() => proceedToNextQuestion().then(resolve).catch(error => {
+          console.error('다음 문제로 넘어가기 실패:', error);
+          resolve();
+        }), 3000);
       } else {
-        console.log('객관식이 아닙니다. 2초 후 "모르겠어요" 버튼을 클릭합니다.');
-        setTimeout(() => {
-          waitForElement('.sc-bdVaJa.iBdmAw.sc-emmjRN.cvAchv.MuiBox-root').then((elements) => {
-            const dontKnowButton = Array.from(elements).find(el => el.textContent.includes('모르겠어요'));
-            if (dontKnowButton) {
-              return clickElement(dontKnowButton);
-            } else {
-              throw new Error('"모르겠어요" 버튼을 찾을 수 없습니다.');
-            }
-          })
-          .then(() => new Promise(resolve => setTimeout(resolve, 1500)))
-          .then(() => waitForElement('[data-testid="dialog-confirm-button"]'))
-          .then(elements => clickElement(elements[0]))
-          .then(() => console.log("확인 버튼 클릭됨"))
-          .catch(error => console.error(error));
-        }, 2000);
+        console.log('주관식 문제 감지. "모르겠어요" 버튼 클릭 시도');
+        handleSubjectiveQuestion().then(() => {
+          console.log('주관식 문제 처리 완료');
+          return proceedToNextQuestion();
+        }).then(resolve).catch(error => {
+          console.error('주관식 문제 처리 중 오류:', error);
+          resolve();
+        });
       }
-
-      setTimeout(() => {
-        waitForElement('[data-testid="quiz-submit-button"]')
-          .then(elements => clickElement(elements[0]))
-          .then(() => {
-            console.log("정답확인 버튼 클릭됨");
-            return new Promise(resolve => setTimeout(resolve, 3000));
-          })
-          .then(() => waitForElement('[data-testid="quiz-pagination-next-button"]'))
-          .then(elements => new Promise(resolve => setTimeout(() => resolve(elements[0]), 3000)))
-          .then(element => clickNextButton(element))
-          .then(() => {
-            console.log("다음 문제로 넘어갑니다.");
-            return waitForPageChange();
-          })
-          .then(() => {
-            resolve();
-          })
-          .catch(error => {
-            console.error('버튼 클릭 중 오류 발생:', error);
-            retryOnError(resolve);
-          });
-      }, 3000);
     }).catch(error => {
       console.error('서브타이틀 요소를 찾을 수 없습니다:', error);
-      retryOnError(resolve);  
+      retryOnError(resolve);
     });
+  });
+}
+
+function handleSubjectiveQuestion() {
+  return new Promise((resolve, reject) => {
+    waitForElement('.sc-bdVaJa.iBdmAw.sc-emmjRN.cvAchv.MuiBox-root')
+      .then((elements) => {
+        const dontKnowButton = Array.from(elements).find(el => el.textContent.includes('모르겠어요'));
+        if (dontKnowButton) {
+          return clickElement(dontKnowButton);
+        } else {
+          throw new Error('"모르겠어요" 버튼을 찾을 수 없습니다.');
+        }
+      })
+      .then(() => new Promise(resolve => setTimeout(resolve, 1500)))
+      .then(() => waitForElement('[data-testid="dialog-confirm-button"]'))
+      .then(elements => clickElement(elements[0]))
+      .then(() => {
+        console.log("확인 버튼 클릭됨");
+        return waitForElement('[data-testid="quiz-submit-button"]');
+      })
+      .then(elements => clickElement(elements[0]))
+      .then(() => {
+        console.log("정답확인 버튼 클릭됨");
+        resolve();
+      })
+      .catch(reject);
+  });
+}
+
+function proceedToNextQuestion(attempts = 0) {
+  return new Promise((resolve, reject) => {
+    waitForElement('[data-testid="quiz-pagination-next-button"]')
+      .then(elements => new Promise(resolve => setTimeout(() => resolve(elements[0]), 2000)))
+      .then(element => clickNextButton(element))
+      .then(() => {
+        console.log("다음 문제로 넘어갑니다.");
+        return waitForPageChange(10000); // 10초 타임아웃
+      })
+      .then(resolve)
+      .catch(error => {
+        console.error('다음 문제로 넘어가기 실패:', error);
+        if (attempts < 3) {
+          console.log(`재시도 중... (${attempts + 1}/3)`);
+          setTimeout(() => proceedToNextQuestion(attempts + 1).then(resolve).catch(reject), 2000);
+        } else {
+          reject(new Error('다음 문제로 넘어가기 최대 시도 횟수 초과'));
+        }
+      });
   });
 }
 
@@ -158,7 +180,7 @@ function clickNextButton(element, attempts = 0) {
   });
 }
 
-function waitForPageChange(timeout = 5000) {
+function waitForPageChange(timeout = 10000) {
   return new Promise((resolve, reject) => {
     const oldUrl = window.location.href;
     const startTime = Date.now();
@@ -170,19 +192,6 @@ function waitForPageChange(timeout = 5000) {
       } else if (Date.now() - startTime > timeout) {
         clearInterval(checkUrlChange);
         reject(new Error("페이지 변경 타임아웃"));
-      }
-    }, 500);
-  });
-}
-
-function waitForPageChange() {
-  return new Promise((resolve) => {
-    const oldUrl = window.location.href;
-    const checkUrlChange = setInterval(() => {
-      if (window.location.href !== oldUrl) {
-        clearInterval(checkUrlChange);
-        console.log("페이지 변경 감지됨");
-        setTimeout(resolve, 2000);
       }
     }, 500);
   });
@@ -334,79 +343,17 @@ function selectAnswerProcess(quizData, headers) {
   });
 }
 
-function handleResultPage() {
-  console.log("handleResultPage 함수 시작");
-  return new Promise((resolve) => {
-    const newUrl = 'https://ai.classting.com/subjects/5/evaluation';
-    console.log(`새 URL로 이동 시도: ${newUrl}`);
-    window.location.href = newUrl;
-
-    function waitForPageLoad() {
-      console.log("페이지 로드 대기 중...");
-      if (document.readyState === 'complete') {
-        console.log("페이지 로드 완료");
-        waitForElement('button.sc-fMiknA.bubOPE').then((buttons) => {
-          console.log(`'단원 총괄평가 시작' 버튼 찾음: ${buttons.length}개`);
-          if (buttons.length > 0) {
-            clickElement(buttons[0]).then(() => {
-              console.log("'단원 총괄평가 시작' 버튼 클릭됨");
-
-              const checkNewTab = setInterval(() => {
-                chrome.runtime.sendMessage({action: "getNewTab"}, (response) => {
-                  console.log("새 탭 확인 응답:", response);
-                  if (response && response.tabId) {
-                    clearInterval(checkNewTab);
-                    chrome.runtime.sendMessage({action: "switchTab", tabId: response.tabId}, () => {
-                      console.log("새 탭으로 전환 완료");
-                      resolve();
-                    });
-                  }
-                });
-              }, 500);
-            });
-          } else {
-            console.error('시작 버튼을 찾을 수 없습니다.');
-            resolve();
-          }
-        }).catch(error => {
-          console.error('waitForElement 에러:', error);
-          resolve();
-        });
-      } else {
-        setTimeout(waitForPageLoad, 100);
-      }
-    }
-
-    waitForPageLoad();
-  });
-}
-
-function checkAndHandleUrl() {
-  const currentUrl = window.location.href;
-  console.log(`현재 URL 체크: ${currentUrl}`);
-  if (currentUrl.endsWith('/result')) {
-    console.log("'/result' 페이지 감지됨");
-    handleResultPage().then(() => {
-      console.log("handleResultPage 완료, fetchDataAndSelectAnswer 호출");
-      fetchDataAndSelectAnswer();
-    });
-  } else {
-    console.log("일반 페이지, fetchDataAndSelectAnswer 호출");
-    fetchDataAndSelectAnswer();
-  }
-}
-
 let lastUrl = location.href;
 new MutationObserver(() => {
   const url = location.href;
   if (url !== lastUrl) {
     console.log(`URL 변경 감지: ${lastUrl} -> ${url}`);
     lastUrl = url;
-    checkAndHandleUrl();
+    fetchDataAndSelectAnswer();
   }
 }).observe(document, { subtree: true, childList: true });
 
 console.log("클래스터가 정상적으로 실행중입니다.");
 setTimeout(() => {
-  checkAndHandleUrl();
+  fetchDataAndSelectAnswer();
 }, 2000);
