@@ -88,19 +88,23 @@ function selectAnswer(data) {
             }
           }).catch(error => console.error(error));
         }
-        setTimeout(() => proceedToNextQuestion().then(resolve).catch(error => {
-          console.error('다음 문제로 넘어가기 실패:', error);
-          resolve();
-        }), 3000);
+        clickSubmitButton()
+          .then(() => proceedToNextQuestion())
+          .then(resolve)
+          .catch(error => {
+            console.error('객관식 문제 처리 중 오류:', error);
+            resolve();
+          });
       } else {
         console.log('주관식 문제 감지. "모르겠어요" 버튼 클릭 시도');
-        handleSubjectiveQuestion().then(() => {
-          console.log('주관식 문제 처리 완료');
-          return proceedToNextQuestion();
-        }).then(resolve).catch(error => {
-          console.error('주관식 문제 처리 중 오류:', error);
-          resolve();
-        });
+        handleSubjectiveQuestion()
+          .then(() => clickSubmitButton())
+          .then(() => proceedToNextQuestion())
+          .then(resolve)
+          .catch(error => {
+            console.error('주관식 문제 처리 중 오류:', error);
+            resolve();
+          });
       }
     }).catch(error => {
       console.error('서브타이틀 요소를 찾을 수 없습니다:', error);
@@ -125,14 +129,38 @@ function handleSubjectiveQuestion() {
       .then(elements => clickElement(elements[0]))
       .then(() => {
         console.log("확인 버튼 클릭됨");
-        return waitForElement('[data-testid="quiz-submit-button"]');
-      })
-      .then(elements => clickElement(elements[0]))
-      .then(() => {
-        console.log("정답확인 버튼 클릭됨");
         resolve();
       })
       .catch(reject);
+  });
+}
+
+function clickSubmitButton(attempts = 0) {
+  return new Promise((resolve, reject) => {
+    console.log("정답확인 버튼 클릭 전 2초 대기 시작");
+    setTimeout(() => {
+      waitForElement('[data-testid="quiz-submit-button"]')
+        .then(elements => {
+          if (elements.length > 0 && elements[0].disabled !== true) {
+            return clickElement(elements[0]);
+          } else {
+            throw new Error('정답확인 버튼을 찾을 수 없거나 비활성화되어 있습니다.');
+          }
+        })
+        .then(() => {
+          console.log("정답확인 버튼 클릭됨");
+          resolve();
+        })
+        .catch(error => {
+          console.error('정답확인 버튼 클릭 실패:', error);
+          if (attempts < 3) {
+            console.log(`정답확인 버튼 클릭 재시도 중... (${attempts + 1}/3)`);
+            setTimeout(() => clickSubmitButton(attempts + 1).then(resolve).catch(reject), 2000);
+          } else {
+            reject(new Error('정답확인 버튼 클릭 최대 시도 횟수 초과'));
+          }
+        });
+    }, 2000);
   });
 }
 
@@ -143,7 +171,7 @@ function proceedToNextQuestion(attempts = 0) {
       .then(element => clickNextButton(element))
       .then(() => {
         console.log("다음 문제로 넘어갑니다.");
-        return waitForPageChange(10000); // 10초 타임아웃
+        return waitForPageChange(7000);
       })
       .then(resolve)
       .catch(error => {
@@ -188,7 +216,7 @@ function waitForPageChange(timeout = 10000) {
       if (window.location.href !== oldUrl) {
         clearInterval(checkUrlChange);
         console.log("페이지 변경 감지됨");
-        setTimeout(resolve, 2000); // 페이지 로드를 위해 2초 대기
+        setTimeout(resolve, 2000);
       } else if (Date.now() - startTime > timeout) {
         clearInterval(checkUrlChange);
         reject(new Error("페이지 변경 타임아웃"));
