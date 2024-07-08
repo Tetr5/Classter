@@ -23,3 +23,45 @@
 한 크롬창에선 총괄평가 시작이 있는 버튼이 있는 페이지와 확장프로그램이 푸는 페이지만 열어두셔야합니다.<br>
 확장프로그램으로 푸는 동안 다른 페이지에 가있으면 안됩니다.<br>
 안넘어가는 경우나 문제 속도제한 문제 등으로 인해 일부로 느리게 조정해놨습니다.
+<br>
+
+# 번외 <br>
+클래스팅 (일반)상자깡 코드
+``` javascript
+const repeatCount = window.prompt("깔 상자 개수를 입력하세요.");
+let currentIteration = 0;
+
+function repeatClickActions() {
+    function clickFirstButton() {
+        const firstButton = document.querySelector('[data-testid="filght-box-normal"][data-event-on="click"][data-event-name="FlightBoxClicked"][data-event-properties*="normal"]');
+        if (firstButton) {
+            firstButton.click();
+            console.log(`상자 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
+            setTimeout(clickSecondButton, 1000);
+        } else {
+            console.error("상자 버튼을 찾을 수 없습니다.");
+        }
+    }
+
+    function clickSecondButton() {
+        const secondButton = document.querySelector('button[data-event-on="click"][data-event-name="CloseButtonClicked"][data-event-properties*="normal"]');
+        if (secondButton) {
+            secondButton.click();
+            console.log(`닫기 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
+            currentIteration++;
+
+            if (currentIteration < repeatCount) {
+                setTimeout(clickFirstButton, 1000);
+            } else {
+                console.log(`총 ${repeatCount}번 클릭 완료.`);
+            }
+        } else {
+            console.error("닫기 버튼을 찾을 수 없습니다.");
+        }
+    }
+
+    clickFirstButton();
+}
+
+repeatClickActions();
+```
