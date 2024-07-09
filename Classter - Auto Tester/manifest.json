@@ -1,0 +1,16 @@
+{
+    "manifest_version": 3,
+    "name": "클래스터 - 오토테스터",
+    "description": "클래스팅 자동 총괄평가",
+    "version": "1.0",
+    "permissions": [
+      "tabs",
+      "scripting"
+    ],
+    "host_permissions": [
+      "https://*.classting.com/*"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    }
+}
