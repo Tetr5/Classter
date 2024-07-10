@@ -46,12 +46,72 @@ function fetchSessionData() {
 function clickElement(element) {
   return new Promise((resolve, reject) => {
     if (element) {
+      const oldUrl = window.location.href;
       element.click();
       console.log(`클릭됨: ${element.textContent}`);
-      resolve();
+      
+      // 클릭 후 페이지 변경 또는 일정 시간 대기
+      waitForPageChangeOrTimeout(oldUrl, 5000)
+        .then(() => {
+          console.log("페이지 변경 감지 또는 대기 시간 완료");
+          resolve();
+        })
+        .catch((error) => {
+          console.error("페이지 변경 감지 실패:", error);
+          reject(error);
+        });
     } else {
       reject(new Error('요소를 찾을 수 없습니다.'));
     }
+  });
+}
+
+function waitForPageChangeOrTimeout(oldUrl, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const checkUrlChange = setInterval(() => {
+      if (window.location.href !== oldUrl) {
+        clearInterval(checkUrlChange);
+        resolve();
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(checkUrlChange);
+        resolve(); // 타임아웃 시에도 resolve 처리
+      }
+    }, 100);
+  });
+}
+
+function proceedToNextQuestion(attempts = 0) {
+  return new Promise((resolve, reject) => {
+    waitForElement('[data-testid="quiz-pagination-next-button"]')
+      .then(elements => new Promise(resolve => setTimeout(() => resolve(elements[0]), 2000)))
+      .then(element => {
+        if (!element || element.disabled) {
+          throw new Error('다음 문제 버튼을 찾을 수 없거나 비활성화되어 있습니다.');
+        }
+        return clickNextButton(element);
+      })
+      .then(() => {
+        console.log("다음 문제로 넘어갑니다.");
+        return waitForPageChange(10000);
+      })
+      .then(() => {
+        // 추가 검증: 새 문제가 로드되었는지 확인
+        return waitForElement('.sc-gGBfsJ.guiQFl.MuiTypography-root.MuiTypography-body1.sc-btzYZH.hEwDzA');
+      })
+      .then(() => {
+        console.log("새 문제가 성공적으로 로드되었습니다.");
+        resolve();
+      })
+      .catch(error => {
+        console.error('다음 문제로 넘어가기 실패:', error);
+        if (attempts < 5) {
+          console.log(`재시도 중... (${attempts + 1}/5)`);
+          setTimeout(() => proceedToNextQuestion(attempts + 1).then(resolve).catch(reject), 2000);
+        } else {
+          reject(new Error('다음 문제로 넘어가기 최대 시도 횟수 초과'));
+        }
+      });
   });
 }
 
