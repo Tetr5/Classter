@@ -26,10 +26,17 @@ https://ai.classting.com/subjects/5/evaluation (5 부분엔 과목코드 넣으�
 안넘어가는 경우나 문제 속도제한 문제 등으로 인해 일부로 느리게 조정해놨습니다.
 <br>
 <br>
+# 스크린샷 <br>
+![2024-7-13_18-55-36](https://github.com/user-attachments/assets/5890c091-2c5e-4627-9203-547566d8dd3a)
+![2024-7-13_18-55-36](https://github.com/user-attachments/assets/bc57c5dc-f042-4c02-b940-90e904a528bc)
+![2024-7-8_20-41-24](https://github.com/user-attachments/assets/a94499fb-6bf3-4250-9f6b-09d06a1dc5f4)
+<br>
+<br>
+
 # 번외 <br>
-클래스팅 (일반)상자깡 코드
+클래스팅 일반상자깡 코드
 ``` javascript
-const repeatCount = window.prompt("깔 상자 개수를 입력하세요.");
+const repeatCount = window.prompt("깔 일반상자 개수를 입력하세요.");
 let currentIteration = 0;
 
 function repeatClickActions() {
@@ -37,10 +44,10 @@ function repeatClickActions() {
         const firstButton = document.querySelector('[data-testid="filght-box-normal"][data-event-on="click"][data-event-name="FlightBoxClicked"][data-event-properties*="normal"]');
         if (firstButton) {
             firstButton.click();
-            console.log(`상자 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
-            setTimeout(clickSecondButton, 1000);
+            console.log(`일반상자 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
+            setTimeout(clickSecondButton, 3000);
         } else {
-            console.error("상자 버튼을 찾을 수 없습니다.");
+            console.error("일반상자 버튼을 찾을 수 없습니다.");
         }
     }
 
@@ -51,6 +58,47 @@ function repeatClickActions() {
             console.log(`닫기 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
             currentIteration++;
 
+            if (currentIteration < repeatCount) {
+                setTimeout(clickFirstButton, 1000);
+            } else {
+                console.log(`총 ${repeatCount}번 클릭 완료.`);
+            }
+        } else {
+            console.error("닫기 버튼을 찾을 수 없습니다.");
+        }
+    }
+
+    clickFirstButton();
+}
+
+repeatClickActions();
+```
+<br>
+
+클래스팅 희귀상자깡 코드
+<br>
+``` javascript
+const repeatCount = window.prompt("깔 희귀상자 개수를 입력하세요.");
+let currentIteration = 0;
+
+function repeatClickActions() {
+    function clickFirstButton() {
+        const firstButton = document.querySelector('[data-testid="filght-box-luxury"][data-event-on="click"][data-event-name="FlightBoxClicked"][data-event-properties*="luxury"]');
+        if (firstButton) {
+            firstButton.click();
+            console.log(`희귀상자 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
+            setTimeout(clickSecondButton, 3000);
+        } else {
+            console.error("희귀상자 버튼을 찾을 수 없습니다.");
+        }
+    }
+
+    function clickSecondButton() {
+        const secondButton = document.querySelector('button[data-event-on="click"][data-event-name="CloseButtonClicked"][data-event-properties*="luxury"]');
+        if (secondButton) {
+            secondButton.click();
+            console.log(`닫기 버튼을 ${currentIteration + 1}번 클릭했습니다.`);
+            currentIteration++;
             if (currentIteration < repeatCount) {
                 setTimeout(clickFirstButton, 1000);
             } else {
